@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 
 import getImagesApi from '../sevices/api';
 
@@ -10,89 +10,73 @@ import Loader from '../Loader/Loader';
 import ButtonLoadMore from '../ButtonLoadMore/ButtonLoadMore';
 import Modal from '../Modal/Modal';
 
-class App extends Component {
-  state = {
-    value: '',
-    images: [],
-    error: null,
-    page: 1,
-    isLoading: false,
-    isModalOpen: false,
-    modalUrl: null,
-    totalHits: null,
-  };
+const App = () => {
+  const [value, setValue] = useState('');
+  const [images, setImages] = useState([]);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalUrl, setModalUrl] = useState(null);
+  const [totalHits, setTotalHits] = useState(null);
 
-  componentDidUpdate(_, prevState) {
-    const { value, page } = this.state;
+  useEffect(() => {
+    if (!value) return;
+    getImg();
+  }, [page, value]);
 
-    if (prevState.value !== value || prevState.page !== page) {
-      this.fetchImages();
-    }
-  }
+  const getImg = () => {
+    setIsLoading(true);
+    setError(null);
 
-  fetchImages = () => {
-    const { page, value } = this.state;
-
-    this.setState({ isLoading: true, error: null });
     getImagesApi(value, page)
       .then(data => {
         if (data.totalHits === 0) {
           Notiflix.Report.info('Wrong 😪', 'Try again');
         }
-        this.setState(prevState => ({
-          images:
-            this.state.page === 1
-              ? data.hits
-              : [...prevState.images, ...data.hits],
-          totalHits: data.totalHits,
-        }));
+        setImages(prevState =>
+          page === 1 ? data.hits : [...prevState, ...data.hits]
+        );
+        setTotalHits(data.totalHits);
       })
-      .catch(error => this.setState({ error: error.message }))
+      .catch(error => setError(error.message))
       .finally(() => {
-        this.setState({ isLoading: false });
+        setIsLoading(false);
       });
   };
 
-  getSearchValue = value => {
-    this.setState({ value: value, page: 1 });
+  const getSearchValue = value => {
+    setValue(value);
+    setPage(1);
   };
 
-  handelloadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const handelloadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  setModalUrl = modalUrl => {
-    this.setState({ modalUrl });
+  const openModalUrl = modalUrl => {
+    setModalUrl(modalUrl);
   };
 
-  handelModalOpen = value => {
-    this.setState({ isModalOpen: true });
-    this.setModalUrl(value);
+  const handelModalOpen = value => {
+    setIsModalOpen(true);
+    openModalUrl(value);
   };
 
-  closeModal = () => {
-    this.setState({ isModalOpen: false });
+  const closeModal = () => {
+    setIsModalOpen(false);
   };
 
-  render() {
-    const { images, isLoading, isModalOpen, modalUrl, error, totalHits } =
-      this.state;
-
-    return (
-      <>
-        <Searchbar onSubmit={this.getSearchValue} />
-        {error && <h1>{error}</h1>}
-        <ImageGallery images={images} handelModalOpen={this.handelModalOpen} />
-        {isLoading && <Loader />}
-        {totalHits > images.length && (
-          <ButtonLoadMore onClick={this.handelloadMore} />
-        )}
-        {isModalOpen && (
-          <Modal modalUrl={modalUrl} closeModal={this.closeModal} />
-        )}
-      </>
-    );
-  }
-}
+  return (
+    <>
+      <Searchbar onSubmit={getSearchValue} />
+      {error && <h1>{error}</h1>}
+      <ImageGallery images={images} handelModalOpen={handelModalOpen} />
+      {isLoading && <Loader />}
+      {totalHits > images.length && <ButtonLoadMore onClick={handelloadMore} />}
+      {isModalOpen && <Modal modalUrl={modalUrl} closeModal={closeModal} />}
+    </>
+  );
+};
 
 export default App;
