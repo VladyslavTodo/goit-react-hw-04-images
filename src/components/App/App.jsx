@@ -21,29 +21,28 @@ const App = () => {
   const [totalHits, setTotalHits] = useState(null);
 
   useEffect(() => {
+    const getImg = () => {
+      setIsLoading(true);
+      setError(null);
+
+      getImagesApi(value, page)
+        .then(data => {
+          if (data.totalHits === 0) {
+            Notiflix.Report.info('Wrong 😪', 'Try again');
+          }
+          setImages(prevState =>
+            page === 1 ? data.hits : [...prevState, ...data.hits]
+          );
+          setTotalHits(data.totalHits);
+        })
+        .catch(error => setError(error.message))
+        .finally(() => {
+          setIsLoading(false);
+        });
+    };
     if (!value) return;
     getImg();
   }, [page, value]);
-
-  const getImg = () => {
-    setIsLoading(true);
-    setError(null);
-
-    getImagesApi(value, page)
-      .then(data => {
-        if (data.totalHits === 0) {
-          Notiflix.Report.info('Wrong 😪', 'Try again');
-        }
-        setImages(prevState =>
-          page === 1 ? data.hits : [...prevState, ...data.hits]
-        );
-        setTotalHits(data.totalHits);
-      })
-      .catch(error => setError(error.message))
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
 
   const getSearchValue = value => {
     setValue(value);
